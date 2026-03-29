@@ -134,3 +134,10 @@ class CharMapper:
             raise ValueError(
                 "Character model checkpoint cell size does not match the extracted tile cell size."
             )
+
+    def runtime_summary(self) -> dict[str, str]:
+        return {
+            "glyph_mode": self.effective_mode,
+            "glyph_device": str(self.resolved_device),
+            "char_model_path": str(self.model_path) if self.model_path is not None else "none",
+        }

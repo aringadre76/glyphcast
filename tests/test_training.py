@@ -18,7 +18,7 @@ def test_train_char_cnn_saves_checkpoint_metadata(tmp_path: Path) -> None:
         fonts=["DejaVuSansMono.ttf"],
     )
 
-    payload = torch.load(checkpoint_path, map_location="cpu")
+    payload = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
 
     assert payload["charset"] == [" ", "."]
     assert payload["cell_size"] == [4, 6]

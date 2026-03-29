@@ -180,7 +180,7 @@ class TorchCheckpointEdgeBackend:
         else:
             raise ValueError(f"Unsupported torch checkpoint backend: {self.name}")
 
-        payload = torch.load(self.checkpoint_path, map_location="cpu")
+        payload = torch.load(self.checkpoint_path, map_location="cpu", weights_only=False)
         if isinstance(payload, dict) and "state_dict" in payload:
             state_dict = payload["state_dict"]
         else:

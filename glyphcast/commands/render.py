@@ -24,6 +24,21 @@ def _load_frames(input_path: Path) -> list:
     return list(VideoReader(input_path).frames())
 
 
+def _format_runtime_summary(pipeline: FramePipeline) -> str:
+    summary = pipeline.runtime_summary()
+    ordered_keys = [
+        "device",
+        "edge_backend",
+        "edge_device",
+        "edge_checkpoint",
+        "glyph_mode",
+        "glyph_device",
+        "char_model_path",
+    ]
+    parts = [f"{key}={summary[key]}" for key in ordered_keys if key in summary]
+    return " ".join(parts)
+
+
 def render_command(
     input_path: Path,
     mode: str = typer.Option("terminal", "--mode"),
@@ -62,11 +77,13 @@ def render_command(
     if mode == "terminal":
         play_terminal_frames(ascii_frames, fps=config.render.fps)
         typer.echo(f"Rendered {len(ascii_frames)} frames in terminal mode")
+        typer.echo(_format_runtime_summary(pipeline))
         return
     if mode == "text":
         output_path = target if target.suffix else target / "ascii.txt"
         export_ascii_frames(ascii_frames, output_path)
         typer.echo(f"Wrote ASCII text output to {output_path}")
+        typer.echo(_format_runtime_summary(pipeline))
         return
     if mode == "video":
         output_path = target if target.suffix else target / "ascii.mp4"
@@ -79,5 +96,6 @@ def render_command(
             cell_size=(config.training.cell_width, config.training.cell_height),
         )
         typer.echo(f"Wrote ASCII video output to {output_path}")
+        typer.echo(_format_runtime_summary(pipeline))
         return
     raise typer.BadParameter(f"Unsupported mode: {mode}")

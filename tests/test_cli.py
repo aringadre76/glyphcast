@@ -68,8 +68,16 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
         def process_frame(self, frame_bgr):
             return FakeArtifacts()
 
-        def runtime_summary(self) -> str:
-            return "device=cuda edge_backend=dexined glyph_mode=cnn_plus_template"
+        def runtime_summary(self) -> dict[str, str]:
+            return {
+                "device": "cuda",
+                "edge_backend": "dexined",
+                "edge_device": "cuda",
+                "edge_checkpoint": "artifacts/models/edge/dexined.pt",
+                "glyph_mode": "cnn_plus_template",
+                "glyph_device": "cuda",
+                "char_model_path": "artifacts/models/chars/char_cnn.pt",
+            }
 
     with patch("glyphcast.commands.render.FramePipeline", FakePipeline):
         result = runner.invoke(

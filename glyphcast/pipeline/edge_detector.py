@@ -41,3 +41,14 @@ class EdgeDetector:
         probabilities = self.edge_backend.infer(denoised)
         binary = postprocess_edge_probabilities(probabilities, threshold=self.threshold)
         return EdgeMaps(probability=probabilities, binary=binary)
+
+    def runtime_summary(self) -> dict[str, str]:
+        active_backend = getattr(self.edge_backend, "name", self.backend)
+        if getattr(self.edge_backend, "sobel_fallback", None) is not None:
+            active_backend = "sobel"
+        resolved_device = getattr(self.edge_backend, "resolved_device", None)
+        return {
+            "edge_backend": str(active_backend),
+            "edge_device": str(resolved_device or "cpu"),
+            "edge_checkpoint": str(self.checkpoint_path) if self.checkpoint_path is not None else "none",
+        }

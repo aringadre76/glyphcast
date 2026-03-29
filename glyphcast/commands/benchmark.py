@@ -6,12 +6,17 @@ from pathlib import Path
 
 import typer
 
+from glyphcast.config import GlyphcastConfig
+from glyphcast.constants import CHARSET_PRESETS, MINIMAL_CHARSET
 from glyphcast.io.gif import read_gif_frames
 from glyphcast.io.video import VideoReader
 from glyphcast.pipeline.frame_pipeline import FramePipeline
 
 
-def benchmark_command(input_path: Path) -> None:
+def benchmark_command(
+    input_path: Path,
+    preset: str = typer.Option("default", "--preset"),
+) -> None:
     if not input_path.exists():
         typer.echo(f"Benchmark scheduled for {input_path}")
         return
@@ -31,8 +36,27 @@ def benchmark_command(input_path: Path) -> None:
         return
 
     sample_frame = frames[0]
-    artifacts = FramePipeline(edge_backend="sobel").process_frame(sample_frame)
+    config = GlyphcastConfig.from_preset(preset)
+    pipeline = FramePipeline(
+        edge_backend=config.runtime.edge_backend,
+        device=config.runtime.device,
+        mixed_precision=config.runtime.mixed_precision,
+        batch_size=config.runtime.batch_size,
+        glyph_mode=config.runtime.glyph_mode,
+        edge_checkpoint=config.runtime.edge_checkpoint,
+        edge_fallback_backend=config.runtime.edge_fallback_backend,
+        char_model_path=config.runtime.char_model_path,
+        glyph_fallback_mode=config.runtime.glyph_fallback_mode,
+        fallback_device=config.runtime.fallback_device,
+        charset=CHARSET_PRESETS.get(config.runtime.charset, MINIMAL_CHARSET),
+        cell_size=(config.training.cell_width, config.training.cell_height),
+    )
+    artifacts = pipeline.process_frame(sample_frame)
+    runtime_summary = " ".join(
+        f"{key}={value}" for key, value in pipeline.runtime_summary().items()
+    )
     typer.echo(
         f"Benchmarked {input_path} frames={frame_count} fps={fps:.2f} "
-        f"ascii_grid={artifacts.ascii_frame.width}x{artifacts.ascii_frame.height}"
+        f"ascii_grid={artifacts.ascii_frame.width}x{artifacts.ascii_frame.height} "
+        f"{runtime_summary}"
     )

@@ -72,5 +72,12 @@ class FramePipeline:
             edge_maps=edge_maps,
             ascii_frame=ascii_frame,
             logits=logits,
-            diagnostics=diagnostics,
+            diagnostics={**diagnostics, **self.runtime_summary()},
         )
+
+    def runtime_summary(self) -> dict[str, str]:
+        return {
+            "device": self.device,
+            **self.edge_detector.runtime_summary(),
+            **self.char_mapper.runtime_summary(),
+        }
