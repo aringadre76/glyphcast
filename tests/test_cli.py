@@ -68,6 +68,9 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
         def process_frame(self, frame_bgr):
             return FakeArtifacts()
 
+        def runtime_summary(self) -> str:
+            return "device=cuda edge_backend=dexined glyph_mode=cnn_plus_template"
+
     with patch("glyphcast.commands.render.FramePipeline", FakePipeline):
         result = runner.invoke(
             app,
@@ -81,6 +84,7 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
     assert captured["glyph_mode"] == "cnn_plus_template"
     assert captured["edge_checkpoint"] == "artifacts/models/edge/dexined.pt"
     assert captured["char_model_path"] == "artifacts/models/chars/char_cnn.pt"
+    assert "device=cuda" in result.output
 
 
 def test_download_models_command_creates_destination(tmp_path: Path) -> None:
