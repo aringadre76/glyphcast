@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 from typer.testing import CliRunner
 
 from glyphcast.cli import app
@@ -48,3 +49,34 @@ def test_benchmark_skips_empty_video_frame_list_without_index_error(tmp_path: Pa
     assert result.exit_code == 0
     combined = f"{result.stdout}\n{result.stderr}"
     assert "no frames" in combined.lower()
+
+
+def test_benchmark_uses_preset_runtime_and_reports_summary(tmp_path: Path) -> None:
+    gif = tmp_path / "sample.gif"
+    gif.write_bytes(b"gif")
+    captured: dict[str, object] = {}
+
+    class FakeAsciiFrame:
+        width = 2
+        height = 1
+
+    class FakeArtifacts:
+        ascii_frame = FakeAsciiFrame()
+        diagnostics = {"device": "cuda", "edge_backend": "dexined", "glyph_mode": "cnn"}
+
+    class FakePipeline:
+        def __init__(self, **kwargs: object) -> None:
+            captured.update(kwargs)
+
+        def process_frame(self, _frame):
+            return FakeArtifacts()
+
+    with patch("glyphcast.commands.benchmark.read_gif_frames", return_value=[np.zeros((12, 8, 3), dtype=np.uint8)]):
+        with patch("glyphcast.commands.benchmark.FramePipeline", FakePipeline):
+            result = runner.invoke(app, ["benchmark", str(gif), "--preset", "fast"])
+
+    assert result.exit_code == 0
+    assert captured["device"] == "cuda"
+    assert captured["glyph_mode"] == "cnn"
+    assert "device=cuda" in result.output
+    assert "glyph_mode=cnn" in result.output
