@@ -17,16 +17,20 @@ def benchmark_command(input_path: Path) -> None:
         return
     if input_path.suffix.lower() == ".gif":
         frames = read_gif_frames(input_path)
-        sample_frame = frames[0]
         frame_count = len(frames)
         fps = 0.0
     else:
         reader = VideoReader(input_path)
         metadata = reader.metadata()
         frames = list(reader.frames())
-        sample_frame = frames[0]
         frame_count = metadata.frame_count
         fps = metadata.fps
+
+    if not frames:
+        typer.echo(f"Benchmark skipped: no frames in {input_path}", err=True)
+        return
+
+    sample_frame = frames[0]
     artifacts = FramePipeline(edge_backend="sobel").process_frame(sample_frame)
     typer.echo(
         f"Benchmarked {input_path} frames={frame_count} fps={fps:.2f} "

@@ -7,6 +7,7 @@ from pathlib import Path
 import typer
 
 from glyphcast.config import GlyphcastConfig
+from glyphcast.constants import CHARSET_PRESETS, MINIMAL_CHARSET
 from glyphcast.io.gif import read_gif_frames
 from glyphcast.io.video import VideoReader
 from glyphcast.pipeline.frame_pipeline import FramePipeline
@@ -33,10 +34,7 @@ def render_command(
     target = output or Path("artifacts/renders/output.txt")
     pipeline = FramePipeline(
         edge_backend=config.runtime.edge_backend,
-        charset={"minimal": " .:-=+*#%@", "balanced": " .:-=+*#%@", "dense": " .:-=+*#%@"}.get(
-            config.runtime.charset,
-            " .:-=+*#%@",
-        ),
+        charset=CHARSET_PRESETS.get(config.runtime.charset, MINIMAL_CHARSET),
         cell_size=(config.training.cell_width, config.training.cell_height),
     )
     smoother = TemporalSmoother() if config.runtime.smoothing else None

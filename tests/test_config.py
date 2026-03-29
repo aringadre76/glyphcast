@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from glyphcast.config import GlyphcastConfig, load_config
+from glyphcast.constants import CHARSET_PRESETS, MINIMAL_CHARSET
 
 
 def test_load_default_config_uses_expected_gpu_friendly_defaults() -> None:
@@ -18,3 +19,20 @@ def test_from_preset_exposes_fast_profile() -> None:
     assert config.render.columns < 120
     assert config.runtime.charset == "minimal"
     assert config.runtime.batch_size == 1024
+
+
+def test_render_style_charset_resolution_maps_presets_to_distinct_lengths() -> None:
+    """Regression: render_command must use CHARSET_PRESETS, not one charset for all."""
+
+    def resolved_charset(preset: str) -> str:
+        cfg = GlyphcastConfig.from_preset(preset)
+        return CHARSET_PRESETS.get(cfg.runtime.charset, MINIMAL_CHARSET)
+
+    minimal = resolved_charset("fast")
+    balanced = resolved_charset("default")
+    dense = resolved_charset("high_quality")
+
+    assert minimal == CHARSET_PRESETS["minimal"]
+    assert balanced == CHARSET_PRESETS["balanced"]
+    assert dense == CHARSET_PRESETS["dense"]
+    assert len(minimal) < len(balanced) < len(dense)
