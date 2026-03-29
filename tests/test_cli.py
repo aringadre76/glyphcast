@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -94,6 +95,43 @@ def test_download_models_command_creates_destination(tmp_path: Path) -> None:
     assert destination.exists()
 
 
+def test_download_models_command_writes_checkpoints_and_manifest(tmp_path: Path, monkeypatch) -> None:
+    destination = tmp_path / "edge-models"
+
+    class FakeResponse:
+        def __init__(self, payload: bytes) -> None:
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return self.payload
+
+    monkeypatch.setattr(
+        "glyphcast.commands.models.urlopen",
+        lambda _url: FakeResponse(b"checkpoint-bytes"),
+    )
+
+    result = runner.invoke(
+        app,
+        ["download-models", "--edge", "all", "--destination", str(destination)],
+    )
+
+    assert result.exit_code == 0
+    assert (destination / "dexined.pt").read_bytes() == b"checkpoint-bytes"
+    assert (destination / "hed.pth").read_bytes() == b"checkpoint-bytes"
+
+    manifest = json.loads((destination / "manifest.json").read_text(encoding="utf-8"))
+
+    assert sorted(manifest["models"]) == ["dexined", "hed"]
+    assert manifest["models"]["dexined"]["path"] == "dexined.pt"
+    assert manifest["models"]["hed"]["path"] == "hed.pth"
+
+
 def test_train_chars_threads_runtime_settings_into_training_command() -> None:
     captured: dict[str, object] = {}
 
@@ -109,4 +147,4 @@ def test_train_chars_threads_runtime_settings_into_training_command() -> None:
     assert captured["charset"] == " .:-=+*#%@"
     assert captured["device"] == "cuda"
     assert captured["cell_size"] == (8, 12)
-    assert captured["fonts"] == [Path("fonts")]
+    assert captured["fonts"] == ["DejaVuSansMono.ttf"]
