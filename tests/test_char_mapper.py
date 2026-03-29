@@ -95,3 +95,29 @@ def test_char_mapper_cnn_plus_template_uses_template_signal_to_break_ties(tmp_pa
     frame = mapper.map_logits(logits, grid_shape=(1, 1))
 
     assert frame.as_text() == "#"
+
+
+def test_char_mapper_rejects_checkpoint_with_incompatible_cell_size(tmp_path) -> None:
+    checkpoint_path = tmp_path / "char_cnn.pt"
+    model = AsciiCharCNN(num_classes=3, in_channels=2)
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "charset": [" ", ".", "#"],
+            "cell_size": [4, 6],
+            "in_channels": 2,
+        },
+        checkpoint_path,
+    )
+
+    mapper = CharMapper(
+        charset=" .#",
+        mode="cnn",
+        model_path=checkpoint_path,
+        device="cpu",
+        fallback_device="cpu",
+        batch_size=1,
+    )
+
+    with np.testing.assert_raises_regex(ValueError, "cell size"):
+        mapper.score_tiles(np.zeros((1, 2, 12, 8), dtype=np.float32))
