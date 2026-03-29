@@ -28,6 +28,8 @@ class CharMapper:
     model: AsciiCharCNN | None = field(default=None, init=False)
     resolved_device: torch.device = field(init=False)
     effective_mode: str = field(init=False)
+    checkpoint_cell_size: tuple[int, int] | None = field(default=None, init=False)
+    checkpoint_in_channels: int | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         self.resolved_device = resolve_torch_device(self.device, self.fallback_device)
@@ -69,6 +71,7 @@ class CharMapper:
     def _score_tiles_with_cnn(self, tiles: np.ndarray) -> np.ndarray:
         if self.model is None:
             raise FileNotFoundError("CNN glyph mode requires a valid model checkpoint.")
+        self._validate_checkpoint_compatibility(tiles)
 
         logits_batches = []
         with torch.no_grad():
@@ -87,12 +90,16 @@ class CharMapper:
         if self.model_path is None:
             raise FileNotFoundError("CNN glyph mode requires a model_path.")
 
-        payload = torch.load(self.model_path, map_location="cpu")
+        payload = torch.load(self.model_path, map_location="cpu", weights_only=False)
         checkpoint_charset = payload.get("charset", list(self.charset))
         if list(checkpoint_charset) != list(self.charset):
             raise ValueError(
                 "Character model charset does not match the active render charset."
             )
+        if "cell_size" in payload:
+            cell_width, cell_height = payload["cell_size"]
+            self.checkpoint_cell_size = (int(cell_width), int(cell_height))
+        self.checkpoint_in_channels = int(payload.get("in_channels", 2))
 
         model = AsciiCharCNN(num_classes=len(self.charset), in_channels=2)
         model.load_state_dict(payload["state_dict"], strict=True)
@@ -116,3 +123,14 @@ class CharMapper:
         maximum = logits.max(axis=1, keepdims=True)
         spans = np.maximum(maximum - minimum, 1e-6)
         return ((logits - minimum) / spans).astype(np.float32)
+
+    def _validate_checkpoint_compatibility(self, tiles: np.ndarray) -> None:
+        if self.checkpoint_in_channels is not None and tiles.shape[1] != self.checkpoint_in_channels:
+            raise ValueError(
+                "Character model input channels do not match the extracted tile channels."
+            )
+        tile_cell_size = (tiles.shape[-1], tiles.shape[-2])
+        if self.checkpoint_cell_size is not None and tile_cell_size != self.checkpoint_cell_size:
+            raise ValueError(
+                "Character model checkpoint cell size does not match the extracted tile cell size."
+            )

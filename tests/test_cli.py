@@ -92,3 +92,21 @@ def test_download_models_command_creates_destination(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert destination.exists()
+
+
+def test_train_chars_threads_runtime_settings_into_training_command() -> None:
+    captured: dict[str, object] = {}
+
+    def fake_train_char_cnn(charset: str, **kwargs: object) -> Path:
+        captured["charset"] = charset
+        captured.update(kwargs)
+        return Path("artifacts/models/chars/char_cnn.pt")
+
+    with patch("glyphcast.commands.train.train_char_cnn", fake_train_char_cnn):
+        result = runner.invoke(app, ["train-chars", "--preset", "fast"])
+
+    assert result.exit_code == 0
+    assert captured["charset"] == " .:-=+*#%@"
+    assert captured["device"] == "cuda"
+    assert captured["cell_size"] == (8, 12)
+    assert captured["fonts"] == [Path("fonts")]
