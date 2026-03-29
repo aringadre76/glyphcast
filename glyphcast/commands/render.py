@@ -34,6 +34,13 @@ def render_command(
     target = output or Path("artifacts/renders/output.txt")
     pipeline = FramePipeline(
         edge_backend=config.runtime.edge_backend,
+        device=config.runtime.device,
+        mixed_precision=config.runtime.mixed_precision,
+        batch_size=config.runtime.batch_size,
+        glyph_mode=config.runtime.glyph_mode,
+        edge_checkpoint=config.runtime.edge_checkpoint,
+        char_model_path=config.runtime.char_model_path,
+        fallback_device=config.runtime.fallback_device,
         charset=CHARSET_PRESETS.get(config.runtime.charset, MINIMAL_CHARSET),
         cell_size=(config.training.cell_width, config.training.cell_height),
     )

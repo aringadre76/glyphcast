@@ -9,6 +9,9 @@ def test_load_default_config_uses_expected_gpu_friendly_defaults() -> None:
 
     assert config.runtime.device == "cuda"
     assert config.runtime.edge_backend == "dexined"
+    assert config.runtime.glyph_mode == "cnn_plus_template"
+    assert config.runtime.edge_checkpoint == "artifacts/models/edge/dexined.pt"
+    assert config.runtime.char_model_path == "artifacts/models/chars/char_cnn.pt"
     assert config.render.columns == 120
     assert config.training.cell_height == 12
 

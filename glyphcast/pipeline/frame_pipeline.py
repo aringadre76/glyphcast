@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -20,11 +21,26 @@ class FramePipeline:
     charset: str = " .#"
     cell_size: tuple[int, int] = (8, 12)
     threshold: float = 0.3
+    device: str = "cpu"
+    mixed_precision: bool = False
+    batch_size: int = 512
+    glyph_mode: str = "template"
+    edge_checkpoint: str | None = None
+    char_model_path: str | None = None
+    fallback_device: str = "cpu"
     edge_detector: EdgeDetector = field(init=False)
     char_mapper: CharMapper = field(init=False)
 
     def __post_init__(self) -> None:
-        self.edge_detector = EdgeDetector(backend=self.edge_backend, threshold=self.threshold)
+        checkpoint_path = None if self.edge_checkpoint is None else Path(self.edge_checkpoint)
+        self.edge_detector = EdgeDetector(
+            backend=self.edge_backend,
+            threshold=self.threshold,
+            checkpoint_path=checkpoint_path,
+            device=self.device,
+            fallback_device=self.fallback_device,
+            mixed_precision=self.mixed_precision,
+        )
         self.char_mapper = CharMapper(charset=self.charset)
 
     def process_frame(self, frame_bgr: np.ndarray) -> FrameArtifacts:

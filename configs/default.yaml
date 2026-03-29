@@ -3,6 +3,10 @@ runtime:
   mixed_precision: true
   batch_size: 512
   edge_backend: dexined
+  edge_checkpoint: artifacts/models/edge/dexined.pt
+  glyph_mode: cnn_plus_template
+  char_model_path: artifacts/models/chars/char_cnn.pt
+  fallback_device: cpu
   charset: balanced
   smoothing: true
 
