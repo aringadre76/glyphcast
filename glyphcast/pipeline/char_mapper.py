@@ -23,25 +23,35 @@ class CharMapper:
     device: str = "cpu"
     fallback_device: str = "cpu"
     batch_size: int = 512
+    fallback_mode: str | None = None
     template_dataset: SyntheticGlyphDataset | None = field(default=None, init=False)
     model: AsciiCharCNN | None = field(default=None, init=False)
     resolved_device: torch.device = field(init=False)
+    effective_mode: str = field(init=False)
 
     def __post_init__(self) -> None:
         self.resolved_device = resolve_torch_device(self.device, self.fallback_device)
+        self.effective_mode = self.mode
         if self.mode in {"cnn", "cnn_plus_template"}:
-            self.model = self._load_model()
+            try:
+                self.model = self._load_model()
+            except (FileNotFoundError, ValueError):
+                if self.fallback_mode == "template":
+                    self.effective_mode = "template"
+                    self.model = None
+                else:
+                    raise
 
     def score_tiles(self, tiles: np.ndarray) -> np.ndarray:
-        if self.mode == "template":
+        if self.effective_mode == "template":
             return self._score_tiles_with_templates(tiles)
-        if self.mode == "cnn":
+        if self.effective_mode == "cnn":
             return self._score_tiles_with_cnn(tiles)
-        if self.mode == "cnn_plus_template":
+        if self.effective_mode == "cnn_plus_template":
             cnn_logits = self._score_tiles_with_cnn(tiles)
             template_logits = self._score_tiles_with_templates(tiles)
             return cnn_logits + self._normalize_rows(template_logits)
-        raise ValueError(f"Unsupported glyph mode: {self.mode}")
+        raise ValueError(f"Unsupported glyph mode: {self.effective_mode}")
 
     def map_logits(self, logits: np.ndarray, grid_shape: tuple[int, int]) -> AsciiFrame:
         indices = np.argmax(logits, axis=1)
