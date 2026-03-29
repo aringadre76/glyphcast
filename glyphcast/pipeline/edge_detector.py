@@ -22,6 +22,7 @@ class EdgeDetector:
     device: str = "cpu"
     fallback_device: str = "cpu"
     mixed_precision: bool = False
+    fallback_backend: str | None = None
     edge_backend: EdgeBackend = field(init=False)
 
     def __post_init__(self) -> None:
@@ -31,6 +32,7 @@ class EdgeDetector:
             device=self.device,
             fallback_device=self.fallback_device,
             mixed_precision=self.mixed_precision,
+            fallback_backend=self.fallback_backend,
         )
 
     def detect(self, frame_bgr: np.ndarray) -> EdgeMaps:

@@ -18,8 +18,10 @@ class RuntimeConfig:
     batch_size: int = 512
     edge_backend: str = "dexined"
     edge_checkpoint: str | None = "artifacts/models/edge/dexined.pt"
+    edge_fallback_backend: str | None = "sobel"
     glyph_mode: str = "cnn_plus_template"
     char_model_path: str | None = "artifacts/models/chars/char_cnn.pt"
+    glyph_fallback_mode: str | None = "template"
     fallback_device: str = "cpu"
     charset: str = "balanced"
     smoothing: bool = True

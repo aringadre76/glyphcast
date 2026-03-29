@@ -4,8 +4,10 @@ runtime:
   batch_size: 1024
   edge_backend: dexined
   edge_checkpoint: artifacts/models/edge/dexined.pt
+  edge_fallback_backend: sobel
   glyph_mode: cnn
   char_model_path: artifacts/models/chars/char_cnn.pt
+  glyph_fallback_mode: template
   fallback_device: cpu
   charset: minimal
   smoothing: true

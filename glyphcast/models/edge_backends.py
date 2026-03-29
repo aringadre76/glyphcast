@@ -112,14 +112,25 @@ class TorchCheckpointEdgeBackend:
     device: str = "cpu"
     fallback_device: str = "cpu"
     mixed_precision: bool = False
+    fallback_backend: str | None = None
     model: torch.jit.ScriptModule | nn.Module | None = None
     resolved_device: torch.device = field(init=False)
+    sobel_fallback: SobelEdgeBackend | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         self.resolved_device = resolve_torch_device(self.device, self.fallback_device)
-        self.model = self._load_model()
+        try:
+            self.model = self._load_model()
+        except (FileNotFoundError, ImportError):
+            if self.fallback_backend == "sobel":
+                self.sobel_fallback = SobelEdgeBackend()
+                self.model = None
+            else:
+                raise
 
     def infer(self, grayscale_frame: np.ndarray) -> np.ndarray:
+        if self.sobel_fallback is not None:
+            return self.sobel_fallback.infer(grayscale_frame)
         assert self.model is not None
         tensor = torch.from_numpy(grayscale_frame.astype(np.float32, copy=False))
         batch = tensor.unsqueeze(0).unsqueeze(0).repeat(1, 3, 1, 1).to(self.resolved_device)
@@ -215,6 +226,7 @@ def build_edge_backend(
     device: str = "cpu",
     fallback_device: str = "cpu",
     mixed_precision: bool = False,
+    fallback_backend: str | None = None,
 ) -> EdgeBackend:
     normalized = name.lower()
     if normalized == "sobel":
@@ -226,5 +238,6 @@ def build_edge_backend(
             device=device,
             fallback_device=fallback_device,
             mixed_precision=mixed_precision,
+            fallback_backend=fallback_backend,
         )
     raise ValueError(f"Unsupported edge backend: {name}")

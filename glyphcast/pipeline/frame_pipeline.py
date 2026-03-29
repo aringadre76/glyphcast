@@ -26,7 +26,9 @@ class FramePipeline:
     batch_size: int = 512
     glyph_mode: str = "template"
     edge_checkpoint: str | None = None
+    edge_fallback_backend: str | None = None
     char_model_path: str | None = None
+    glyph_fallback_mode: str | None = None
     fallback_device: str = "cpu"
     edge_detector: EdgeDetector = field(init=False)
     char_mapper: CharMapper = field(init=False)
@@ -40,8 +42,18 @@ class FramePipeline:
             device=self.device,
             fallback_device=self.fallback_device,
             mixed_precision=self.mixed_precision,
+            fallback_backend=self.edge_fallback_backend,
         )
-        self.char_mapper = CharMapper(charset=self.charset)
+        char_model_path = None if self.char_model_path is None else Path(self.char_model_path)
+        self.char_mapper = CharMapper(
+            charset=self.charset,
+            mode=self.glyph_mode,
+            model_path=char_model_path,
+            device=self.device,
+            fallback_device=self.fallback_device,
+            batch_size=self.batch_size,
+            fallback_mode=self.glyph_fallback_mode,
+        )
 
     def process_frame(self, frame_bgr: np.ndarray) -> FrameArtifacts:
         diagnostics: dict[str, float] = {}
