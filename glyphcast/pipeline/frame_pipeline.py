@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+from glyphcast.pipeline.background_suppression import suppress_background_logits
 from glyphcast.pipeline.char_mapper import CharMapper
 from glyphcast.pipeline.edge_detector import EdgeDetector
 from glyphcast.pipeline.preprocess import prepare_grayscale_frame
@@ -30,6 +31,10 @@ class FramePipeline:
     char_model_path: str | None = None
     glyph_fallback_mode: str | None = None
     fallback_device: str = "cpu"
+    background_suppression: bool = False
+    background_edge_threshold: float = 0.05
+    background_variance_threshold: float = 0.08
+    background_confidence_margin: float = 0.15
     edge_detector: EdgeDetector = field(init=False)
     char_mapper: CharMapper = field(init=False)
 
@@ -65,6 +70,15 @@ class FramePipeline:
             tile_batch = extract_tiles(grayscale, edge_maps.binary, cell_size=self.cell_size)
         with timed_step(diagnostics, "classification"):
             logits = self.char_mapper.score_tiles(tile_batch.tiles)
+            if self.background_suppression:
+                logits = suppress_background_logits(
+                    logits,
+                    tile_batch.tiles,
+                    charset=self.charset,
+                    edge_threshold=self.background_edge_threshold,
+                    variance_threshold=self.background_variance_threshold,
+                    confidence_margin=self.background_confidence_margin,
+                )
             ascii_frame = self.char_mapper.map_logits(logits, grid_shape=tile_batch.grid_shape)
         return FrameArtifacts(
             source_frame=frame_bgr,

@@ -11,6 +11,10 @@ runtime:
   fallback_device: cpu
   charset: dense
   smoothing: true
+  background_suppression: false
+  background_edge_threshold: 0.05
+  background_variance_threshold: 0.08
+  background_confidence_margin: 0.15
 
 render:
   columns: 160

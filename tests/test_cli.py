@@ -92,6 +92,7 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
     assert captured["glyph_mode"] == "cnn_plus_template"
     assert captured["edge_checkpoint"] == "artifacts/models/edge/dexined.pt"
     assert captured["char_model_path"] == "artifacts/models/chars/char_cnn.pt"
+    assert captured["background_suppression"] is False
     assert "device=cuda" in result.output
 
 
@@ -167,7 +168,7 @@ def test_train_chars_threads_runtime_settings_into_training_command() -> None:
         result = runner.invoke(app, ["train-chars", "--preset", "fast"])
 
     assert result.exit_code == 0
-    assert captured["charset"] == " .:-=+*#%@"
+    assert captured["charset"] == " .'`^\",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
     assert captured["device"] == "cuda"
     assert captured["cell_size"] == (8, 12)
     assert captured["fonts"] == ["DejaVuSansMono.ttf"]

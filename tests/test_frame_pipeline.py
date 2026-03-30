@@ -31,3 +31,23 @@ def test_frame_pipeline_produces_ascii_frame_for_simple_edge_image() -> None:
     assert artifacts.ascii_frame.height == 4
     assert len(artifacts.ascii_frame.characters) == 16
     assert artifacts.logits is not None
+
+
+def test_frame_pipeline_can_blank_low_information_tiles_after_logits(monkeypatch) -> None:
+    frame = np.zeros((12, 16, 3), dtype=np.uint8)
+
+    def fake_score_tiles(self, tiles: np.ndarray) -> np.ndarray:
+        return np.tile(np.array([[0.10, 0.20, 0.22]], dtype=np.float32), (tiles.shape[0], 1))
+
+    monkeypatch.setattr("glyphcast.pipeline.char_mapper.CharMapper.score_tiles", fake_score_tiles)
+    pipeline = FramePipeline(
+        edge_backend="sobel",
+        charset=" .#",
+        cell_size=(4, 3),
+        threshold=0.2,
+        background_suppression=True,
+    )
+
+    artifacts = pipeline.process_frame(frame)
+
+    assert artifacts.ascii_frame.as_text() == "    \n    \n    \n    "

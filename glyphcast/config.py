@@ -25,6 +25,10 @@ class RuntimeConfig:
     fallback_device: str = "cpu"
     charset: str = "balanced"
     smoothing: bool = True
+    background_suppression: bool = False
+    background_edge_threshold: float = 0.05
+    background_variance_threshold: float = 0.08
+    background_confidence_margin: float = 0.15
 
 
 @dataclass(slots=True)

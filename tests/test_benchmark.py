@@ -88,6 +88,7 @@ def test_benchmark_uses_preset_runtime_and_reports_summary(tmp_path: Path) -> No
 
     assert result.exit_code == 0
     assert captured["device"] == "cuda"
-    assert captured["glyph_mode"] == "cnn"
+    assert captured["glyph_mode"] == "cnn_plus_template"
+    assert captured["background_suppression"] is True
     assert "device=cuda" in result.output
-    assert "glyph_mode=cnn" in result.output
+    assert "glyph_mode=cnn" in result.output or "glyph_mode=cnn_plus_template" in result.output

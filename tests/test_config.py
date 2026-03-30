@@ -12,6 +12,7 @@ def test_load_default_config_uses_expected_gpu_friendly_defaults() -> None:
     assert config.runtime.glyph_mode == "cnn_plus_template"
     assert config.runtime.edge_checkpoint == "artifacts/models/edge/dexined.pt"
     assert config.runtime.char_model_path == "artifacts/models/chars/char_cnn.pt"
+    assert config.runtime.background_suppression is False
     assert config.render.columns == 120
     assert config.training.cell_height == 12
 
@@ -23,6 +24,8 @@ def test_from_preset_exposes_fast_profile() -> None:
     assert config.runtime.charset == "balanced"
     assert config.runtime.batch_size == 1024
     assert config.runtime.glyph_mode == "cnn_plus_template"
+    assert config.runtime.background_suppression is True
+    assert config.runtime.background_edge_threshold == 0.05
 
 
 def test_render_style_charset_resolution_uses_expected_preset_mapping() -> None:
