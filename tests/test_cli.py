@@ -62,6 +62,8 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
         edge_maps = type("EdgeMaps", (), {"binary": None})()
 
     class FakePipeline:
+        charset = " .#"
+
         def __init__(self, **kwargs: object) -> None:
             captured.update(kwargs)
 
