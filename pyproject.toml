@@ -77,10 +77,6 @@ module = "kornia"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "glyphcast.models.char_rf"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
 module = "sklearn.*"
 ignore_missing_imports = true
 
