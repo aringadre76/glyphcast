@@ -82,7 +82,10 @@ def test_benchmark_uses_preset_runtime_and_reports_summary(tmp_path: Path) -> No
                 "char_model_path": "artifacts/models/chars/char_cnn.pt",
             }
 
-    with patch("glyphcast.commands.benchmark.read_gif_frames", return_value=[np.zeros((12, 8, 3), dtype=np.uint8)]):
+    with patch(
+        "glyphcast.commands.benchmark.read_gif_frames",
+        return_value=[np.zeros((12, 8, 3), dtype=np.uint8)],
+    ):
         with patch("glyphcast.commands.benchmark.FramePipeline", FakePipeline):
             result = runner.invoke(app, ["benchmark", str(gif), "--preset", "fast"])
 

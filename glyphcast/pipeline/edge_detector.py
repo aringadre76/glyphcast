@@ -51,5 +51,7 @@ class EdgeDetector:
         return {
             "edge_backend": str(active_backend),
             "edge_device": edge_device,
-            "edge_checkpoint": str(self.checkpoint_path) if self.checkpoint_path is not None else "none",
+            "edge_checkpoint": str(self.checkpoint_path)
+            if self.checkpoint_path is not None
+            else "none",
         }

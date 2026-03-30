@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import joblib
 import numpy as np
+
+from joblib import dump as joblib_dump
 from sklearn.ensemble import RandomForestClassifier
 
 
@@ -26,4 +27,4 @@ class RandomForestCharClassifier:
         return np.log(np.clip(probabilities, 1e-6, 1.0))
 
     def save(self, path: str) -> None:
-        joblib.dump(self.model, path)
+        joblib_dump(self.model, path)

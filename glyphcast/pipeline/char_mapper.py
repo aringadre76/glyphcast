@@ -66,7 +66,9 @@ class CharMapper:
         templates = self._get_template_dataset(cell_size=(tiles.shape[-1], tiles.shape[-2]))
         flattened_tiles = tiles.reshape(tiles.shape[0], -1)
         flattened_templates = templates.tiles.reshape(templates.tiles.shape[0], -1)
-        distances = ((flattened_tiles[:, None, :] - flattened_templates[None, :, :]) ** 2).mean(axis=2)
+        distances = ((flattened_tiles[:, None, :] - flattened_templates[None, :, :]) ** 2).mean(
+            axis=2
+        )
         return -distances.astype(np.float32)
 
     def _score_tiles_with_cnn(self, tiles: np.ndarray) -> np.ndarray:
@@ -94,9 +96,7 @@ class CharMapper:
         payload = torch.load(self.model_path, map_location="cpu", weights_only=False)
         checkpoint_charset = payload.get("charset", list(self.charset))
         if list(checkpoint_charset) != list(self.charset):
-            raise ValueError(
-                "Character model charset does not match the active render charset."
-            )
+            raise ValueError("Character model charset does not match the active render charset.")
         if "cell_size" in payload:
             cell_width, cell_height = payload["cell_size"]
             self.checkpoint_cell_size = (int(cell_width), int(cell_height))
@@ -133,7 +133,10 @@ class CharMapper:
         return ((logits - minimum) / spans).astype(np.float32)
 
     def _validate_checkpoint_compatibility(self, tiles: np.ndarray) -> None:
-        if self.checkpoint_in_channels is not None and tiles.shape[1] != self.checkpoint_in_channels:
+        if (
+            self.checkpoint_in_channels is not None
+            and tiles.shape[1] != self.checkpoint_in_channels
+        ):
             raise ValueError(
                 "Character model input channels do not match the extracted tile channels."
             )

@@ -55,7 +55,9 @@ def suppress_background_logits(
 
     low_information = (edge_density <= edge_threshold) & (grayscale_variance <= variance_threshold)
     low_confidence = confidence_margin_values <= confidence_margin
-    bright_uniform_background = (grayscale_mean >= 0.95) & (grayscale_variance <= variance_threshold)
+    bright_uniform_background = (grayscale_mean >= 0.95) & (
+        grayscale_variance <= variance_threshold
+    )
     boundary_background = np.zeros(logits.shape[0], dtype=bool)
     perimeter_band_background = np.zeros(logits.shape[0], dtype=bool)
     if grid_shape is not None:
@@ -64,16 +66,8 @@ def suppress_background_logits(
             rows = np.repeat(np.arange(height), width)
             cols = np.tile(np.arange(width), height)
             on_boundary = (rows == 0) | (rows == height - 1) | (cols == 0) | (cols == width - 1)
-            perimeter_band = (
-                (rows <= 3)
-                | (rows >= height - 4)
-                | (cols <= 3)
-                | (cols >= width - 4)
-            )
-            boundary_background = (
-                on_boundary
-                & (grayscale_mean >= 0.8)
-            )
+            perimeter_band = (rows <= 3) | (rows >= height - 4) | (cols <= 3) | (cols >= width - 4)
+            boundary_background = on_boundary & (grayscale_mean >= 0.8)
             perimeter_band_background = (
                 perimeter_band
                 & (grayscale_mean >= 0.75)

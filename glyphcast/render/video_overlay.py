@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from typing import Iterable
 
 import cv2
@@ -42,8 +43,15 @@ def write_ascii_video(
     ascii_overlays = [render_ascii_overlay(frame, cell_size=cell_size) for frame in frames]
     height, width = ascii_overlays[0].shape[:2]
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    writer = cv2.VideoWriter(str(output_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
-    source_sequence = list(source_frames) if source_frames is not None else [None] * len(ascii_overlays)
+    writer = cv2.VideoWriter(
+        str(output_path),
+        cv2.VideoWriter_fourcc(*"mp4v"),  # type: ignore[attr-defined]
+        fps,
+        (width, height),
+    )
+    source_sequence: list[Any | None] = (
+        list(source_frames) if source_frames is not None else [None] * len(ascii_overlays)
+    )
     try:
         for overlay, source in zip(ascii_overlays, source_sequence):
             writer.write(composite_ascii_overlay(source, overlay, mode=overlay_mode))

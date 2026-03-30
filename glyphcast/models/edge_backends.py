@@ -14,7 +14,7 @@ from torch import nn
 try:
     from kornia.filters import DexiNed as KorniaDexiNed
 except ImportError:  # pragma: no cover - exercised when edge extras are not installed.
-    KorniaDexiNed = None
+    KorniaDexiNed = None  # type: ignore[misc, assignment]
 
 
 class EdgeBackend(Protocol):
@@ -176,7 +176,7 @@ class TorchCheckpointEdgeBackend:
                 raise ImportError(
                     "DexiNed requires kornia. Install the project with the [edge] extras."
                 )
-            model = KorniaDexiNed(pretrained=False)
+            model = KorniaDexiNed(pretrained=False)  # type: ignore[assignment]
         else:
             raise ValueError(f"Unsupported torch checkpoint backend: {self.name}")
 

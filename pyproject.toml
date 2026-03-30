@@ -39,6 +39,7 @@ dev = [
   "mypy>=1.10",
   "pytest>=8.0",
   "ruff>=0.6",
+  "types-PyYAML>=6.0",
 ]
 
 [project.scripts]
@@ -53,3 +54,36 @@ target-version = "py311"
 
 [tool.setuptools.packages.find]
 include = ["glyphcast*"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "glyphcast.config"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "glyphcast.models.char_rf"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "cv2"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "kornia"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "glyphcast.models.char_rf"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "sklearn.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "joblib"
+ignore_missing_imports = true

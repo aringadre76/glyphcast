@@ -35,5 +35,7 @@ def extract_tiles(
                 )
             )
     if not tiles:
-        return TileBatch(tiles=np.zeros((0, 2, cell_height, cell_width), dtype=np.float32), grid_shape=(0, 0))
+        return TileBatch(
+            tiles=np.zeros((0, 2, cell_height, cell_width), dtype=np.float32), grid_shape=(0, 0)
+        )
     return TileBatch(tiles=np.stack(tiles).astype(np.float32), grid_shape=(grid_height, grid_width))

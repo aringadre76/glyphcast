@@ -9,7 +9,9 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 
-def load_font(font_path: str | Path | None, font_size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+def load_font(
+    font_path: str | Path | None, font_size: int
+) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     if font_path is None:
         return ImageFont.load_default()
     try:

@@ -121,7 +121,9 @@ def test_download_models_command_creates_destination(tmp_path: Path) -> None:
     assert destination.exists()
 
 
-def test_download_models_command_writes_checkpoints_and_manifest(tmp_path: Path, monkeypatch) -> None:
+def test_download_models_command_writes_checkpoints_and_manifest(
+    tmp_path: Path, monkeypatch
+) -> None:
     destination = tmp_path / "edge-models"
 
     class FakeResponse:
@@ -170,7 +172,10 @@ def test_train_chars_threads_runtime_settings_into_training_command() -> None:
         result = runner.invoke(app, ["train-chars", "--preset", "fast"])
 
     assert result.exit_code == 0
-    assert captured["charset"] == " .'`^\",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+    assert (
+        captured["charset"]
+        == " .'`^\",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+    )
     assert captured["device"] == "cuda"
     assert captured["cell_size"] == (8, 12)
     assert captured["fonts"] == ["DejaVuSansMono.ttf"]

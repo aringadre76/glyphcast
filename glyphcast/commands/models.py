@@ -40,13 +40,24 @@ def download_models_command(
         names = sorted(MODEL_SOURCES)
     else:
         names = [edge]
-    manifest: dict[str, object] = {"models": {}}
+    from typing import TypedDict
+
+    class ModelInfo(TypedDict):
+        url: str
+        path: str
+        sha256: str
+
+    class Manifest(TypedDict):
+        models: dict[str, ModelInfo]
+
+    manifest: Manifest = {"models": {}}
     for name in names:
         source = MODEL_SOURCES.get(name)
         if source is None:
             raise typer.BadParameter(f"Unsupported edge model: {name}")
         output_path = resolved / str(source["filename"])
         checksum = _download_model(str(source["url"]), output_path)
+        assert "models" in manifest
         manifest["models"][name] = {
             "url": source["url"],
             "path": output_path.name,

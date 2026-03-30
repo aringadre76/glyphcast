@@ -16,5 +16,8 @@ class GlyphAtlas:
 
 
 def build_glyph_atlas(charset: str, cell_size: tuple[int, int]) -> GlyphAtlas:
-    glyphs = {character: (render_glyph_tile(character, cell_size=cell_size) * 255).astype(np.uint8) for character in charset}
+    glyphs = {
+        character: (render_glyph_tile(character, cell_size=cell_size) * 255).astype(np.uint8)
+        for character in charset
+    }
     return GlyphAtlas(glyphs=glyphs, cell_size=cell_size)

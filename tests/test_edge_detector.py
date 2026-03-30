@@ -61,7 +61,9 @@ def test_edge_detector_builds_edge_backend_once(monkeypatch) -> None:
         calls.append((name, checkpoint_path))
         return FakeBackend()
 
-    monkeypatch.setattr("glyphcast.pipeline.edge_detector.build_edge_backend", fake_build_edge_backend)
+    monkeypatch.setattr(
+        "glyphcast.pipeline.edge_detector.build_edge_backend", fake_build_edge_backend
+    )
     detector = EdgeDetector(backend="sobel")
 
     detector.detect(frame)
