@@ -74,3 +74,30 @@ def test_suppress_background_logits_blanks_bright_uniform_tile_even_with_spuriou
     suppressed = suppress_background_logits(logits, tiles, charset=" .#")
 
     assert np.argmax(suppressed, axis=1).tolist() == [0]
+
+
+def test_suppress_background_logits_blanks_bright_low_confidence_tile_in_perimeter_band() -> None:
+    logits = np.array(
+        [
+            [0.10, 0.20, 0.90],
+            [0.90, 0.20, 0.10],
+            [0.90, 0.20, 0.10],
+            [0.10, 0.20, 0.24],
+            [0.90, 0.20, 0.10],
+        ],
+        dtype=np.float32,
+    )
+    tiles = np.zeros((5, 2, 12, 8), dtype=np.float32)
+    tiles[3, 0, :, :] = 0.78
+    tiles[3, 1, :, :] = 1.0
+
+    suppressed = suppress_background_logits(
+        logits,
+        tiles,
+        charset=" .#",
+        grid_shape=(1, 5),
+        confidence_margin=0.05,
+    )
+
+    assert np.argmax(suppressed, axis=1).tolist()[3] == 0
+    assert np.argmax(suppressed, axis=1).tolist()[0] == 2

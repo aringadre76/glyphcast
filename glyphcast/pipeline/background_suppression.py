@@ -57,17 +57,35 @@ def suppress_background_logits(
     low_confidence = confidence_margin_values <= confidence_margin
     bright_uniform_background = (grayscale_mean >= 0.95) & (grayscale_variance <= variance_threshold)
     boundary_background = np.zeros(logits.shape[0], dtype=bool)
+    perimeter_band_background = np.zeros(logits.shape[0], dtype=bool)
     if grid_shape is not None:
         height, width = grid_shape
         if height * width == logits.shape[0] and height > 0 and width > 0:
             rows = np.repeat(np.arange(height), width)
             cols = np.tile(np.arange(width), height)
             on_boundary = (rows == 0) | (rows == height - 1) | (cols == 0) | (cols == width - 1)
+            perimeter_band = (
+                (rows <= 3)
+                | (rows >= height - 4)
+                | (cols <= 3)
+                | (cols >= width - 4)
+            )
             boundary_background = (
                 on_boundary
                 & (grayscale_mean >= 0.8)
             )
-    blank_mask = (low_information & low_confidence) | bright_uniform_background | boundary_background
+            perimeter_band_background = (
+                perimeter_band
+                & (grayscale_mean >= 0.75)
+                & (grayscale_variance <= max(variance_threshold * 10.0, 0.002))
+                & (confidence_margin_values <= max(confidence_margin, 0.06))
+            )
+    blank_mask = (
+        (low_information & low_confidence)
+        | bright_uniform_background
+        | boundary_background
+        | perimeter_band_background
+    )
 
     pre_argmax = np.argmax(logits, axis=1)
     pre_blank = int(np.sum(pre_argmax == blank_index))
@@ -92,6 +110,7 @@ def suppress_background_logits(
             "nLowConf": int(np.count_nonzero(low_confidence)),
             "nBrightBg": int(np.count_nonzero(bright_uniform_background)),
             "nBoundaryBg": int(np.count_nonzero(boundary_background)),
+            "nPerimeterBandBg": int(np.count_nonzero(perimeter_band_background)),
             "nMask": int(np.count_nonzero(blank_mask)),
             "preBlank": pre_blank,
             "postBlank": post_blank,
