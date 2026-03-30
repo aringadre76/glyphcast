@@ -1,15 +1,16 @@
 # glyphcast
 
-GPU-accelerated ML pipeline that converts videos and GIFs into clean, noise-free ASCII art using edge detection and character classification.
+GPU-accelerated pipeline that turns videos and GIFs into clean ASCII art using edge detection and per-cell character classification (with a CPU-friendly fallback path).
 
 ## Features
 
-- PyTorch-ready edge detection with `dexined`, `hed`, and `sobel` backends (Sobel used when checkpoints are missing or `[edge]` is not installed).
-- Synthetic glyph dataset generation and a lightweight CNN for ASCII character classification, plus a Random Forest baseline for offline experiments.
-- OpenCV-based video ingestion and GIF decoding.
-- Motion-aware temporal smoothing to reduce flicker between frames.
-- Output modes: terminal playback, text export, and MP4 overlay (`ascii_only`, `blended`, or `source_tinted` in config).
-- Typer CLI with presets (`default`, `fast`, `high_quality`) and runtime summaries (device, edge backend, glyph mode, checkpoint paths) after `render` and `benchmark`.
+- **Edge backends**: PyTorch-ready `dexined`, `hed`, and `sobel`. Sobel is used when checkpoints are missing or the `[edge]` extra is not installed.
+- **Glyphs**: Synthetic glyph dataset generation, a lightweight char CNN, and a Random Forest baseline for offline experiments. Runtime `glyph_mode` can use the CNN with template fallback when weights or CUDA are unavailable.
+- **Ingestion**: OpenCV for video; dedicated GIF decoding.
+- **Temporal smoothing**: Optional motion-aware smoothing to cut flicker between frames.
+- **Background suppression**: Optional runtime tuning (`background_suppression` and related thresholds in YAML) to quiet low-confidence background cells.
+- **Outputs**: Terminal playback, stacked text export, and MP4 (`render.overlay_mode`: `ascii_only`, `blended`, or `source_tinted`). For blends, the source frame is resized to the ASCII canvas when resolutions differ so compositing stays shape-safe.
+- **CLI**: Typer with presets (`default`, `fast`, `high_quality`). `render` and `benchmark` print a short runtime summary (device, edge backend, glyph mode, checkpoint paths) so you can see what actually ran.
 
 ## Requirements
 
@@ -23,7 +24,7 @@ glyphcast/                 # installable package
   io/                      # Video and GIF decoding
   models/                  # Edge backends and character models
   pipeline/                # Preprocess, tiling, mapping, temporal smoothing
-  render/                  # Terminal, text export, video overlay
+  render/                  # Terminal, text export, video overlay, compositing
   training/                # Synthetic glyphs and training
   utils/                   # Profiling helpers
 configs/                   # default.yaml, fast.yaml, high_quality.yaml
@@ -51,32 +52,45 @@ glyphcast render giphy.gif --mode text --output artifacts/renders/giphy.txt
 python3 -m glyphcast.cli render giphy.gif --mode text --output artifacts/renders/giphy.txt
 ```
 
-4. Download edge checkpoints (optional; enables DexiNed/HED when `[edge]` + PyTorch are available):
+4. Download edge checkpoints (optional; enables DexiNed/HED when `[edge]` and PyTorch are available):
 
 ```bash
 glyphcast download-models --edge all
 ```
 
-Character CNN weights live under `artifacts/models/chars/` by default; train your own with `train-chars` or supply paths via config.
+Character CNN weights live under `artifacts/models/chars/` by default. Train your own with `train-chars` or point `runtime.char_model_path` in YAML to your checkpoint.
 
 ## Configuration
 
-- **Presets** (`--preset`): `default`, `fast`, `high_quality` — YAML under `configs/`.
-- **Charset** (`train-chars --charset` or `runtime.charset` in YAML): `minimal`, `balanced`, or `dense` (distinct progressive charsets), or a custom string.
+- **Presets** (`--preset`): `default`, `fast`, `high_quality` — YAML files in `configs/`.
+- **Charset** (`train-chars --charset` or `runtime.charset` in YAML): `minimal`, `balanced`, or `dense` (three distinct progressive charsets), or a custom string.
+- **Runtime**: `device`, `edge_backend`, `glyph_mode`, smoothing, background suppression, batch size, and fallbacks are all driven from the preset YAML; override by editing a copy or adding a new preset file.
 
 ## Commands
 
 | Command | Purpose |
 |--------|---------|
-| `glyphcast render <input> --mode {terminal,text,video} [--output PATH] [--preset NAME]` | Run full pipeline on a video or GIF. |
+| `glyphcast render <input> --mode {terminal,text,video} [--output PATH] [--preset NAME]` | Full pipeline on a video or GIF. |
 | `glyphcast benchmark <input> [--preset NAME]` | One-frame timing and metadata; prints runtime summary. |
 | `glyphcast train-chars [--charset minimal\|balanced\|dense] [--fonts PATH] [--preset NAME]` | Train the char CNN. |
-| `glyphcast download-models [--edge dexined\|hed\|all] [--destination DIR]` | Fetch edge weights into `artifacts/models/edge/` (default). |
+| `glyphcast download-models [--edge dexined\|hed\|all] [--destination DIR]` | Fetch edge weights (default: DexiNed only; destination defaults to `artifacts/models/edge/`). |
 
 Use `glyphcast <command> --help` for full options.
+
+## Development
+
+```bash
+python3 -m pip install -e ".[dev]"
+pytest
+ruff check .
+ruff format --check .
+```
+
+## License
+
+MIT — see `pyproject.toml`.
 
 ## Notes
 
 - Without `[edge]` or without downloaded edge weights, the pipeline falls back to Sobel while keeping the same CLI and config fields.
-- `render` and `benchmark` echo a short runtime summary so you can confirm GPU vs CPU, edge backend, and glyph mode for that run.
-- For neural edges, install `[edge]` and run `download-models`; char inference still uses `artifacts/models/chars/` when `glyph_mode` expects a CNN.
+- For neural edges, install `[edge]` and run `download-models`; char inference still expects checkpoints under `artifacts/models/chars/` when the config uses a CNN-backed `glyph_mode`.
