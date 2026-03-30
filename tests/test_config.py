@@ -20,8 +20,9 @@ def test_from_preset_exposes_fast_profile() -> None:
     config = GlyphcastConfig.from_preset("fast")
 
     assert config.render.columns < 120
-    assert config.runtime.charset == "minimal"
+    assert config.runtime.charset == "balanced"
     assert config.runtime.batch_size == 1024
+    assert config.runtime.glyph_mode == "cnn_plus_template"
 
 
 def test_render_style_charset_resolution_maps_presets_to_distinct_lengths() -> None:
