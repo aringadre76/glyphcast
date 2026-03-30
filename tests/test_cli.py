@@ -98,10 +98,21 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
 def test_download_models_command_creates_destination(tmp_path: Path) -> None:
     destination = tmp_path / "edge-models"
 
-    result = runner.invoke(
-        app,
-        ["download-models", "--destination", str(destination)],
-    )
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b"x"
+
+    with patch("glyphcast.commands.models.urlopen", lambda _url: FakeResponse()):
+        result = runner.invoke(
+            app,
+            ["download-models", "--destination", str(destination)],
+        )
 
     assert result.exit_code == 0
     assert destination.exists()
