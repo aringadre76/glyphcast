@@ -64,7 +64,6 @@ def suppress_background_logits(
             on_boundary = (rows == 0) | (rows == height - 1) | (cols == 0) | (cols == width - 1)
             boundary_background = (
                 on_boundary
-                & (grayscale_variance <= variance_threshold)
                 & (grayscale_mean >= 0.8)
             )
     blank_mask = (low_information & low_confidence) | boundary_background
