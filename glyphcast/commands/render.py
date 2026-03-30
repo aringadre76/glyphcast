@@ -58,6 +58,10 @@ def render_command(
         char_model_path=config.runtime.char_model_path,
         glyph_fallback_mode=config.runtime.glyph_fallback_mode,
         fallback_device=config.runtime.fallback_device,
+        background_suppression=config.runtime.background_suppression,
+        background_edge_threshold=config.runtime.background_edge_threshold,
+        background_variance_threshold=config.runtime.background_variance_threshold,
+        background_confidence_margin=config.runtime.background_confidence_margin,
         charset=CHARSET_PRESETS.get(config.runtime.charset, MINIMAL_CHARSET),
         cell_size=(config.training.cell_width, config.training.cell_height),
     )
