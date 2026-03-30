@@ -45,6 +45,7 @@ class CharMapper:
                     raise
 
     def score_tiles(self, tiles: np.ndarray) -> np.ndarray:
+        tiles = self._prepare_tiles_for_scoring(tiles)
         if self.effective_mode == "template":
             return self._score_tiles_with_templates(tiles)
         if self.effective_mode == "cnn":
@@ -117,6 +118,13 @@ class CharMapper:
                 cell_size=cell_size,
             )
         return self.template_dataset
+
+    def _prepare_tiles_for_scoring(self, tiles: np.ndarray) -> np.ndarray:
+        prepared = tiles.astype(np.float32, copy=True)
+        if prepared.shape[1] > 0:
+            # Training data stores glyph ink as bright pixels; runtime tiles arrive as luminance.
+            prepared[:, 0] = 1.0 - prepared[:, 0]
+        return prepared
 
     def _normalize_rows(self, logits: np.ndarray) -> np.ndarray:
         minimum = logits.min(axis=1, keepdims=True)
