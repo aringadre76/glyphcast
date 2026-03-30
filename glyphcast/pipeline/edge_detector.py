@@ -44,11 +44,12 @@ class EdgeDetector:
 
     def runtime_summary(self) -> dict[str, str]:
         active_backend = getattr(self.edge_backend, "name", self.backend)
+        edge_device = str(getattr(self.edge_backend, "resolved_device", None) or "cpu")
         if getattr(self.edge_backend, "sobel_fallback", None) is not None:
             active_backend = "sobel"
-        resolved_device = getattr(self.edge_backend, "resolved_device", None)
+            edge_device = "cpu"
         return {
             "edge_backend": str(active_backend),
-            "edge_device": str(resolved_device or "cpu"),
+            "edge_device": edge_device,
             "edge_checkpoint": str(self.checkpoint_path) if self.checkpoint_path is not None else "none",
         }

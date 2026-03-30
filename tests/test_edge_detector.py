@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 
@@ -89,3 +91,18 @@ def test_torch_checkpoint_edge_backend_runs_torchscript_checkpoint(tmp_path) -> 
 
     assert probabilities.shape == (4, 4)
     assert np.allclose(probabilities, grayscale, atol=1e-5)
+
+
+def test_edge_detector_runtime_summary_reports_cpu_for_sobel_fallback() -> None:
+    detector = EdgeDetector(
+        backend="hed",
+        checkpoint_path=Path("missing-model.pth"),
+        device="cuda",
+        fallback_device="cpu",
+        fallback_backend="sobel",
+    )
+
+    summary = detector.runtime_summary()
+
+    assert summary["edge_backend"] == "sobel"
+    assert summary["edge_device"] == "cpu"
