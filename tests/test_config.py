@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from glyphcast.config import GlyphcastConfig, load_config
-from glyphcast.constants import CHARSET_PRESETS, MINIMAL_CHARSET
+from glyphcast.constants import BALANCED_CHARSET, CHARSET_PRESETS, DENSE_CHARSET, MINIMAL_CHARSET
 
 
 def test_load_default_config_uses_expected_gpu_friendly_defaults() -> None:
@@ -44,4 +44,5 @@ def test_render_style_charset_resolution_uses_expected_preset_mapping() -> None:
     assert fast == CHARSET_PRESETS["balanced"]
     assert balanced == CHARSET_PRESETS["balanced"]
     assert dense == CHARSET_PRESETS["dense"]
-    assert len(balanced) < len(dense)
+    # Charset presets must be strictly increasing in length
+    assert len(MINIMAL_CHARSET) < len(BALANCED_CHARSET) < len(DENSE_CHARSET)
