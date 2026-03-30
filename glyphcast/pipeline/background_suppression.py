@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from pathlib import Path
 
 import numpy as np
 
-_AGENT_DEBUG_LOG = Path("/home/robot/glyphcast/.cursor/debug-f9ce89.log")
-_AGENT_SESSION_ID = "f9ce89"
+_AGENT_DEBUG_LOG = Path(
+    os.environ.get("AGENT_DEBUG_LOG", tempfile.gettempdir())  # nosec B108
+) / "glyphcast_debug.log"
+_AGENT_SESSION_ID = os.environ.get("AGENT_SESSION_ID", "ci")
 
 
 def agent_debug_append(record: dict) -> None:
