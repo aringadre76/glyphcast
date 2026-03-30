@@ -32,6 +32,7 @@ def suppress_background_logits(
     tiles: np.ndarray,
     *,
     charset: str,
+    grid_shape: tuple[int, int] | None = None,
     edge_threshold: float = 0.05,
     variance_threshold: float = 0.08,
     confidence_margin: float = 0.15,
@@ -45,6 +46,7 @@ def suppress_background_logits(
     grayscale_tiles = tiles[:, 0]
     edge_tiles = tiles[:, 1]
 
+    grayscale_mean = grayscale_tiles.mean(axis=(1, 2))
     edge_density = edge_tiles.mean(axis=(1, 2))
     grayscale_variance = grayscale_tiles.var(axis=(1, 2))
 
@@ -53,7 +55,19 @@ def suppress_background_logits(
 
     low_information = (edge_density <= edge_threshold) & (grayscale_variance <= variance_threshold)
     low_confidence = confidence_margin_values <= confidence_margin
-    blank_mask = low_information & low_confidence
+    boundary_background = np.zeros(logits.shape[0], dtype=bool)
+    if grid_shape is not None:
+        height, width = grid_shape
+        if height * width == logits.shape[0] and height > 0 and width > 0:
+            rows = np.repeat(np.arange(height), width)
+            cols = np.tile(np.arange(width), height)
+            on_boundary = (rows == 0) | (rows == height - 1) | (cols == 0) | (cols == width - 1)
+            boundary_background = (
+                on_boundary
+                & (grayscale_variance <= variance_threshold)
+                & (grayscale_mean >= 0.8)
+            )
+    blank_mask = (low_information & low_confidence) | boundary_background
 
     pre_argmax = np.argmax(logits, axis=1)
     pre_blank = int(np.sum(pre_argmax == blank_index))
@@ -76,9 +90,11 @@ def suppress_background_logits(
             "confTh": float(confidence_margin),
             "nLowInfo": int(np.count_nonzero(low_information)),
             "nLowConf": int(np.count_nonzero(low_confidence)),
+            "nBoundaryBg": int(np.count_nonzero(boundary_background)),
             "nMask": int(np.count_nonzero(blank_mask)),
             "preBlank": pre_blank,
             "postBlank": post_blank,
+            "grayQ": _quantiles_3(grayscale_mean),
             "edgeQ": _quantiles_3(edge_density),
             "varQ": _quantiles_3(grayscale_variance),
             "marginQ": _quantiles_3(confidence_margin_values),

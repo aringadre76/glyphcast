@@ -75,6 +75,7 @@ class FramePipeline:
                     logits,
                     tile_batch.tiles,
                     charset=self.charset,
+                    grid_shape=tile_batch.grid_shape,
                     edge_threshold=self.background_edge_threshold,
                     variance_threshold=self.background_variance_threshold,
                     confidence_margin=self.background_confidence_margin,
