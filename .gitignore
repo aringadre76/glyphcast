@@ -216,3 +216,5 @@ artifacts/models/
 
 # Cursor — per-machine hook state (rules live under .cursor/rules or project docs)
 .cursor/hooks/state/
+
+.cursor
