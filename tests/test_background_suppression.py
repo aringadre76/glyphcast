@@ -41,3 +41,25 @@ def test_suppress_background_logits_keeps_grid_decode_order() -> None:
     frame = mapper.map_logits(suppressed, grid_shape=(1, 2))
 
     assert frame.as_text() == " #"
+
+
+def test_suppress_background_logits_blanks_low_variance_boundary_tile_even_with_edges() -> None:
+    logits = np.array(
+        [
+            [0.10, 0.20, 0.90],
+            [0.90, 0.20, 0.10],
+        ],
+        dtype=np.float32,
+    )
+    tiles = np.zeros((2, 2, 12, 8), dtype=np.float32)
+    tiles[0, 0, :, :] = 0.97
+    tiles[0, 1, :, :] = 1.0
+
+    suppressed = suppress_background_logits(
+        logits,
+        tiles,
+        charset=" .#",
+        grid_shape=(1, 2),
+    )
+
+    assert np.argmax(suppressed, axis=1).tolist() == [0, 0]
