@@ -2,7 +2,29 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
+
+_AGENT_DEBUG_LOG = Path("/home/robot/glyphcast/.cursor/debug-f9ce89.log")
+_AGENT_SESSION_ID = "f9ce89"
+
+
+def agent_debug_append(record: dict) -> None:
+    """Append one compact NDJSON line (session instrumentation)."""
+    record.setdefault("sessionId", _AGENT_SESSION_ID)
+    line = json.dumps(record, separators=(",", ":"), ensure_ascii=False) + "\n"
+    _AGENT_DEBUG_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with _AGENT_DEBUG_LOG.open("a", encoding="utf-8") as fh:
+        fh.write(line)
+
+
+def _quantiles_3(arr: np.ndarray) -> list[float]:
+    if arr.size == 0:
+        return [0.0, 0.0, 0.0]
+    q = np.percentile(arr.astype(np.float64), [10.0, 50.0, 90.0])
+    return [float(q[0]), float(q[1]), float(q[2])]
 
 
 def suppress_background_logits(
@@ -33,7 +55,35 @@ def suppress_background_logits(
     low_confidence = confidence_margin_values <= confidence_margin
     blank_mask = low_information | (low_information & low_confidence)
 
+    pre_argmax = np.argmax(logits, axis=1)
+    pre_blank = int(np.sum(pre_argmax == blank_index))
+
     suppressed = logits.copy()
     for index in np.where(blank_mask)[0]:
         suppressed[index, blank_index] = np.max(suppressed[index]) + 1.0
+    post_argmax = np.argmax(suppressed, axis=1)
+    post_blank = int(np.sum(post_argmax == blank_index))
+
+    # region agent log
+    agent_debug_append(
+        {
+            "hypothesisId": "H1,H2,H4,H5",
+            "where": "suppress_background_logits",
+            "n": int(logits.shape[0]),
+            "blankIdx": int(blank_index),
+            "edgeTh": float(edge_threshold),
+            "varTh": float(variance_threshold),
+            "confTh": float(confidence_margin),
+            "nLowInfo": int(np.count_nonzero(low_information)),
+            "nLowConf": int(np.count_nonzero(low_confidence)),
+            "nMask": int(np.count_nonzero(blank_mask)),
+            "preBlank": pre_blank,
+            "postBlank": post_blank,
+            "edgeQ": _quantiles_3(edge_density),
+            "varQ": _quantiles_3(grayscale_variance),
+            "marginQ": _quantiles_3(confidence_margin_values),
+        }
+    )
+    # endregion
+
     return suppressed.astype(np.float32)

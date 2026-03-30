@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import typer
 
 from glyphcast.config import GlyphcastConfig
 from glyphcast.constants import CHARSET_PRESETS, MINIMAL_CHARSET
 from glyphcast.io.gif import read_gif_frames
 from glyphcast.io.video import VideoReader
+from glyphcast.pipeline.background_suppression import agent_debug_append
 from glyphcast.pipeline.frame_pipeline import FramePipeline
 from glyphcast.pipeline.temporal import TemporalSmoother
 from glyphcast.render.terminal import play_terminal_frames
@@ -68,10 +70,33 @@ def render_command(
     smoother = TemporalSmoother() if config.runtime.smoothing else None
     ascii_frames = []
     source_frames = _load_frames(input_path)
-    for frame_bgr in source_frames:
+    charset = pipeline.charset
+    blank_idx = charset.index(" ") if " " in charset else 0
+    for frame_idx, frame_bgr in enumerate(source_frames):
         artifacts = pipeline.process_frame(frame_bgr)
         if smoother is not None and artifacts.logits is not None:
-            smoothed_logits = smoother.update(artifacts.logits, artifacts.edge_maps.binary)
+            pre_logits = artifacts.logits
+            pre_blank = int(np.sum(np.argmax(pre_logits, axis=1) == blank_idx))
+            smoothed_logits = smoother.update(pre_logits, artifacts.edge_maps.binary)
+            post_blank = int(np.sum(np.argmax(smoothed_logits, axis=1) == blank_idx))
+            # region agent log
+            if frame_idx < 3:
+                agent_debug_append(
+                    {
+                        "hypothesisId": "H3",
+                        "where": "render.temporal",
+                        "frameIdx": int(frame_idx),
+                        "smoothingRan": True,
+                        "preBlank": pre_blank,
+                        "postBlank": post_blank,
+                        "blankDropped": bool(post_blank < pre_blank),
+                        "logitsSame": bool(
+                            pre_logits.shape == smoothed_logits.shape
+                            and np.array_equal(pre_logits, smoothed_logits)
+                        ),
+                    }
+                )
+            # endregion
             artifacts.ascii_frame = pipeline.char_mapper.map_logits(
                 smoothed_logits,
                 grid_shape=(artifacts.ascii_frame.height, artifacts.ascii_frame.width),
