@@ -9,9 +9,12 @@ from pathlib import Path
 
 import numpy as np
 
-_AGENT_DEBUG_LOG = Path(
-    os.environ.get("AGENT_DEBUG_LOG", tempfile.gettempdir())  # nosec B108
-) / "glyphcast_debug.log"
+_AGENT_DEBUG_LOG = (
+    Path(
+        os.environ.get("AGENT_DEBUG_LOG", tempfile.gettempdir())  # nosec B108
+    )
+    / "glyphcast_debug.log"
+)
 _AGENT_SESSION_ID = os.environ.get("AGENT_SESSION_ID", "ci")
 
 
