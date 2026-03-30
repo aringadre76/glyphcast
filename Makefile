@@ -1,4 +1,5 @@
 PYTHON ?= python3
+export PYTHONPATH := $(CURDIR):$(PYTHONPATH)
 
 .PHONY: install install-dev test lint typecheck render train download-models
 
