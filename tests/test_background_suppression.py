@@ -63,3 +63,14 @@ def test_suppress_background_logits_blanks_low_variance_boundary_tile_even_with_
     )
 
     assert np.argmax(suppressed, axis=1).tolist() == [0, 0]
+
+
+def test_suppress_background_logits_blanks_bright_uniform_tile_even_with_spurious_edges() -> None:
+    logits = np.array([[0.10, 0.20, 0.90]], dtype=np.float32)
+    tiles = np.zeros((1, 2, 12, 8), dtype=np.float32)
+    tiles[0, 0, :, :] = 0.97
+    tiles[0, 1, :, :] = 1.0
+
+    suppressed = suppress_background_logits(logits, tiles, charset=" .#")
+
+    assert np.argmax(suppressed, axis=1).tolist() == [0]

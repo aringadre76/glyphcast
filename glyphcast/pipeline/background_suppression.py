@@ -55,6 +55,7 @@ def suppress_background_logits(
 
     low_information = (edge_density <= edge_threshold) & (grayscale_variance <= variance_threshold)
     low_confidence = confidence_margin_values <= confidence_margin
+    bright_uniform_background = (grayscale_mean >= 0.95) & (grayscale_variance <= variance_threshold)
     boundary_background = np.zeros(logits.shape[0], dtype=bool)
     if grid_shape is not None:
         height, width = grid_shape
@@ -66,7 +67,7 @@ def suppress_background_logits(
                 on_boundary
                 & (grayscale_mean >= 0.8)
             )
-    blank_mask = (low_information & low_confidence) | boundary_background
+    blank_mask = (low_information & low_confidence) | bright_uniform_background | boundary_background
 
     pre_argmax = np.argmax(logits, axis=1)
     pre_blank = int(np.sum(pre_argmax == blank_index))
@@ -89,6 +90,7 @@ def suppress_background_logits(
             "confTh": float(confidence_margin),
             "nLowInfo": int(np.count_nonzero(low_information)),
             "nLowConf": int(np.count_nonzero(low_confidence)),
+            "nBrightBg": int(np.count_nonzero(bright_uniform_background)),
             "nBoundaryBg": int(np.count_nonzero(boundary_background)),
             "nMask": int(np.count_nonzero(blank_mask)),
             "preBlank": pre_blank,
