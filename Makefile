@@ -12,7 +12,8 @@ test:
 	pytest
 
 lint:
-	ruff check glyphcast tests
+	ruff check .
+	ruff format --check .
 
 typecheck:
 	mypy glyphcast

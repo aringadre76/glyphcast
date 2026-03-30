@@ -80,10 +80,20 @@ Use `glyphcast <command> --help` for full options.
 ## Development
 
 ```bash
-python3 -m pip install -e ".[dev]"
+python3 -m pip install -e ".[dev,train,edge]"
 pytest
 ruff check .
 ruff format --check .
+mypy glyphcast
+```
+
+Or use `make` targets:
+
+```bash
+make install-dev
+make test
+make lint
+make typecheck
 ```
 
 ## License
