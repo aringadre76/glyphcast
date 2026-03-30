@@ -97,6 +97,33 @@ def test_char_mapper_cnn_plus_template_uses_template_signal_to_break_ties(tmp_pa
     assert frame.as_text() == "#"
 
 
+def test_char_mapper_cnn_plus_template_treats_bright_edge_free_tile_as_blank(tmp_path) -> None:
+    checkpoint_path = tmp_path / "char_cnn.pt"
+    model = AsciiCharCNN(num_classes=2, in_channels=2)
+    with torch.no_grad():
+        for parameter in model.parameters():
+            parameter.zero_()
+    torch.save(
+        {"state_dict": model.state_dict(), "charset": [" ", "W"]},
+        checkpoint_path,
+    )
+
+    mapper = CharMapper(
+        charset=" W",
+        mode="cnn_plus_template",
+        model_path=checkpoint_path,
+        device="cpu",
+        fallback_device="cpu",
+        batch_size=1,
+    )
+    bright_blank_tile = np.zeros((1, 2, 12, 8), dtype=np.float32)
+    bright_blank_tile[:, 0, :, :] = 0.97
+
+    logits = mapper.score_tiles(bright_blank_tile)
+
+    assert np.argmax(logits, axis=1).tolist() == [0]
+
+
 def test_char_mapper_rejects_checkpoint_with_incompatible_cell_size(tmp_path) -> None:
     checkpoint_path = tmp_path / "char_cnn.pt"
     model = AsciiCharCNN(num_classes=3, in_channels=2)
