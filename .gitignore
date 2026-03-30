@@ -218,3 +218,4 @@ artifacts/models/
 .cursor/hooks/state/
 
 .cursor
+progress.md
