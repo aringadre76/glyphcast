@@ -53,7 +53,7 @@ def suppress_background_logits(
 
     low_information = (edge_density <= edge_threshold) & (grayscale_variance <= variance_threshold)
     low_confidence = confidence_margin_values <= confidence_margin
-    blank_mask = low_information | (low_information & low_confidence)
+    blank_mask = low_information & low_confidence
 
     pre_argmax = np.argmax(logits, axis=1)
     pre_blank = int(np.sum(pre_argmax == blank_index))

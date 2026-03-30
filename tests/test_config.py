@@ -25,7 +25,9 @@ def test_from_preset_exposes_fast_profile() -> None:
     assert config.runtime.batch_size == 1024
     assert config.runtime.glyph_mode == "cnn_plus_template"
     assert config.runtime.background_suppression is True
-    assert config.runtime.background_edge_threshold == 0.05
+    assert config.runtime.background_edge_threshold == 0.0
+    assert config.runtime.background_variance_threshold == 0.0002
+    assert config.runtime.background_confidence_margin == 0.05
 
 
 def test_render_style_charset_resolution_uses_expected_preset_mapping() -> None:

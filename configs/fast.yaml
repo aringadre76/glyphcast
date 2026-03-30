@@ -12,9 +12,9 @@ runtime:
   charset: balanced
   smoothing: true
   background_suppression: true
-  background_edge_threshold: 0.05
-  background_variance_threshold: 0.08
-  background_confidence_margin: 0.15
+  background_edge_threshold: 0.0
+  background_variance_threshold: 0.0002
+  background_confidence_margin: 0.05
 
 render:
   columns: 96
