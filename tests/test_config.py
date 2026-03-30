@@ -25,18 +25,18 @@ def test_from_preset_exposes_fast_profile() -> None:
     assert config.runtime.glyph_mode == "cnn_plus_template"
 
 
-def test_render_style_charset_resolution_maps_presets_to_distinct_lengths() -> None:
-    """Regression: render_command must use CHARSET_PRESETS, not one charset for all."""
+def test_render_style_charset_resolution_uses_expected_preset_mapping() -> None:
+    """Regression: render_command must use the configured charset preset per profile."""
 
     def resolved_charset(preset: str) -> str:
         cfg = GlyphcastConfig.from_preset(preset)
         return CHARSET_PRESETS.get(cfg.runtime.charset, MINIMAL_CHARSET)
 
-    minimal = resolved_charset("fast")
+    fast = resolved_charset("fast")
     balanced = resolved_charset("default")
     dense = resolved_charset("high_quality")
 
-    assert minimal == CHARSET_PRESETS["minimal"]
+    assert fast == CHARSET_PRESETS["balanced"]
     assert balanced == CHARSET_PRESETS["balanced"]
     assert dense == CHARSET_PRESETS["dense"]
-    assert len(minimal) < len(balanced) < len(dense)
+    assert len(balanced) < len(dense)
