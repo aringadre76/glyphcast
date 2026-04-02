@@ -5,11 +5,11 @@ runtime:
   edge_backend: dexined
   edge_checkpoint: artifacts/models/edge/dexined.pt
   edge_fallback_backend: sobel
-  glyph_mode: cnn_plus_template
-  char_model_path: artifacts/models/chars/char_cnn.pt
-  glyph_fallback_mode: template
+  glyph_mode: template
+  char_model_path: None
+  glyph_fallback_mode: None
   fallback_device: cpu
-  charset: balanced
+  charset: minimal
   smoothing: true
   background_suppression: true
   background_edge_threshold: 0.0

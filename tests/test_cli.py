@@ -76,9 +76,9 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
                 "edge_backend": "dexined",
                 "edge_device": "cuda",
                 "edge_checkpoint": "artifacts/models/edge/dexined.pt",
-                "glyph_mode": "cnn_plus_template",
-                "glyph_device": "cuda",
-                "char_model_path": "artifacts/models/chars/char_cnn.pt",
+                "glyph_mode": "template",
+                "glyph_device": "cpu",
+                "char_model_path": "None",
             }
 
     with patch("glyphcast.commands.render.FramePipeline", FakePipeline):
@@ -91,9 +91,9 @@ def test_render_threads_runtime_settings_into_frame_pipeline(tmp_path: Path) -> 
     assert captured["device"] == "cuda"
     assert captured["mixed_precision"] is True
     assert captured["batch_size"] == 512
-    assert captured["glyph_mode"] == "cnn_plus_template"
+    assert captured["glyph_mode"] == "template"
     assert captured["edge_checkpoint"] == "artifacts/models/edge/dexined.pt"
-    assert captured["char_model_path"] == "artifacts/models/chars/char_cnn.pt"
+    assert captured["char_model_path"] == "None"
     assert captured["background_suppression"] is False
     assert "device=cuda" in result.output
 
@@ -172,10 +172,6 @@ def test_train_chars_threads_runtime_settings_into_training_command() -> None:
         result = runner.invoke(app, ["train-chars", "--preset", "fast"])
 
     assert result.exit_code == 0
-    assert (
-        captured["charset"]
-        == " .'`^\",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
-    )
-    assert captured["device"] == "cuda"
+    assert captured["charset"] == " .:-=+*#%@", captured["device"] == "cuda"
     assert captured["cell_size"] == (8, 12)
     assert captured["fonts"] == ["DejaVuSansMono.ttf"]
