@@ -147,7 +147,10 @@ class CharMapper:
         return prepared
 
     def score_tiles_with_edge_density(self, tiles: np.ndarray) -> np.ndarray:
-        """Score tiles based on edge density for density-based charset selection."""
+        """Score tiles based on edge density for density-based charset selection.
+
+        Similar to the baseline approach where more edges = denser character.
+        """
         # Edge tiles are in channel 1 (grayscale in channel 0)
         if tiles.shape[1] < 2:
             # No edge information, return empty scores
@@ -157,47 +160,64 @@ class CharMapper:
         # Compute edge density as mean of edge values (0-1 range)
         edge_density = edge_tiles.mean(axis=(1, 2))
 
-        # Map edge density to character index using a sigmoid-like mapping
-        # to better match the baseline distribution:
-        # space: near 0 density
-        # .: low density (0.02-0.05)
-        # :: low-medium density (0.05-0.1)
-        # -: medium density (0.1-0.2)
-        # +: medium-high density (0.2-0.3)
-        # *: high density (0.3-0.5)
-        # #: higher density (0.5-0.7)
-        # %: high density (0.7-0.85)
-        # @: very high density (0.85-1.0)
-        # Using exponential mapping to accentuate differences
-        # and match the visual properties of the baseline
-
         num_chars = len(DENSITY_BASED_CHARSET)
-        # Apply exponential scaling to match baseline distribution
-        # More tiles should map to @ and # for the test image
-        edge_density_exp = np.power(edge_density, 0.8)
+        blank_idx = DENSITY_BASED_CHARSET.index(" ")
 
-        # Use quantile-based thresholds
-        thresholds = np.linspace(0, 1, num_chars + 1)
-
-        indices = np.digitize(edge_density_exp, thresholds[:-1]) - 1
-        indices = np.clip(indices, 0, num_chars - 1).astype(np.int64)
-
-        # Create one-hot style scores with high score for selected character
+        # Initialize scores with blank
         scores = np.zeros((tiles.shape[0], num_chars), dtype=np.float32)
-        for i, idx in enumerate(indices):
-            scores[i, idx] = 1.0
+
+        # Direct mapping from edge density to character:
+        # 0.00-0.02: space (no edges - background)
+        # 0.02-0.05: . (low density)
+        # 0.05-0.1: : (medium-low)
+        # 0.1-0.15: - (medium)
+        # 0.15-0.2: + (medium-high)
+        # 0.2-0.3: * (high)
+        # 0.3-0.5: # (very high)
+        # 0.5-0.7: % (dense)
+        # 0.7-1.0: @ (very dense)
+
+        for i in range(len(tiles)):
+            density = edge_density[i]
+            if density <= 0.02:
+                scores[i, blank_idx] = 1.0
+            elif density <= 0.05:
+                scores[i, 1] = 1.0  # .
+            elif density <= 0.1:
+                scores[i, 2] = 1.0  # :
+            elif density <= 0.15:
+                scores[i, 3] = 1.0  # -
+            elif density <= 0.2:
+                scores[i, 4] = 1.0  # =
+            elif density <= 0.3:
+                scores[i, 5] = 1.0  # +
+            elif density <= 0.5:
+                scores[i, 6] = 1.0  # *
+            elif density <= 0.7:
+                scores[i, 7] = 1.0  # #
+            else:
+                scores[i, 9] = 1.0  # @ (skip % - use @ for highest density)
 
         return scores
 
     def score_tiles_with_luminance(self, tiles: np.ndarray) -> np.ndarray:
-        """Score tiles based on grayscale luminance and edges for character selection.
+        """Score tiles based on grayscale luminance for character selection.
 
-        Similar to the baseline approach:
-        - Tiles without edges -> space
-        - Tiles with edges -> character based on edge density (not luminance)
+        Maps grayscale intensity to characters:
+        - Dark areas (luminance < 0.45) -> @ (densest)
+        - Medium-dark (0.45-0.6) -> # (dark)
+        - Medium (0.6-0.75) -> % (medium)
+        - Medium-bright (0.75-0.85) -> * (bright)
+        - Bright (0.85-0.95) -> . (very bright)
+        - Very bright (0.95-1.0) -> space (background)
+
+        Tiles without edges always get space.
         """
-        # Edge tiles are in channel 1
+        # Grayscale tiles are in channel 0, edges in channel 1
+        grayscale = tiles[:, 0]  # 0 = black (dark), 1 = white (bright)
         edges = tiles[:, 1]
+
+        luminance = grayscale.mean(axis=(1, 2))
         edge_density = edges.mean(axis=(1, 2))
 
         num_chars = len(DENSITY_BASED_CHARSET)
@@ -206,29 +226,25 @@ class CharMapper:
         # Initialize scores with blank
         scores = np.zeros((tiles.shape[0], num_chars), dtype=np.float32)
 
-        # For tiles with edges, use edge density to select character
         for i in range(len(tiles)):
-            if edge_density[i] > 0.02:
-                # Use edge density to select character:
-                # Low edge density (0.02-0.05) -> .
-                # Medium (0.05-0.1) -> :
-                # Higher (0.1-0.15) -> -
-                # Medium-high (0.15-0.2) -> +
-                # High (0.2-0.3) -> *
-                # Very high (0.3-0.5) -> #
-                # Dense (0.5-0.7) -> %
-                # Very dense (0.7-1.0) -> @
-                thresholds = [0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0]
-                for idx, thresh in enumerate(thresholds):
-                    if edge_density[i] <= thresh:
-                        # Map to character index (space first, then the rest)
-                        char_idx = idx + 1  # +1 because space is at index 0
-                        break
-                else:
-                    char_idx = num_chars - 1  # Default to last character (@)
-                scores[i, char_idx] = 1.0
-            else:
+            lum = luminance[i]
+            has_edges = edge_density[i] > 0.02
+
+            if not has_edges:
+                # No edges - use space
                 scores[i, blank_idx] = 1.0
+            elif lum < 0.45:
+                scores[i, 9] = 1.0  # @
+            elif lum < 0.6:
+                scores[i, 7] = 1.0  # #
+            elif lum < 0.75:
+                scores[i, 8] = 1.0  # %
+            elif lum < 0.85:
+                scores[i, 6] = 1.0  # *
+            elif lum < 0.95:
+                scores[i, 1] = 1.0  # .
+            else:
+                scores[i, blank_idx] = 1.0  # space
 
         return scores
 
