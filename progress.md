@@ -274,3 +274,36 @@ For this project, **template matching with minimal charset produces better resul
 - Is faster (no model inference)
 - Produces cleaner output
 - Matches the baseline quality exactly in structure and sparsity
+
+## Fifth debug pass - Charset Resolution Bug
+
+### Root cause identified
+
+After implementing the minimal charset with template mode, the output was still different from the baseline. The issue was:
+
+1. The config had `charset: minimal` which would be loaded as the **string** `"minimal"`
+2. The CharMapper was using `"minimal"` as the actual character set, not `" .:-=+*#%@"`
+3. This meant templates were built with characters `['m', 'i', 'n', 'i', 'm', 'a', 'l']` instead of the intended minimal charset
+
+### Fix
+
+Added `_resolve_charset()` function and `DENSITY_BASED_CHARSET` constant in `char_mapper.py` to resolve charset preset names to actual charset strings:
+- `"minimal"` → `" .:-=+*#%@"`
+- `"balanced"` → `" .'`^",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYZUJCLQ0OZmwqpdbkhao*#MW&8%B@$"`
+- `"dense"` → `" .'`^",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYZUJCLQ0OZmwqpdbkhao*#MW&8%B@$▒▓█"`
+
+###kb
+
+- Added charset resolution in `CharMapper.__post_init__()` 
+- Added `DENSITY_BASED_CHARSET` constant for future edge-based character selection
+- Added `edge` glyph mode option
+
+### Validation
+
+- Full test suite: `46 passed`
+- Lint checks: no issues
+- Charset resolution now correctly maps `minimal` → `" .:-=+*#%@"`
+
+### Takeaway
+
+The ML pipeline can now use the minimal charset properly, but the template matching produces different character selections than the original baseline because the baseline was generated with a different algorithm. The template approach produces similar structure and sparsity but different character choices (`.`, `:`, `-` vs `@`, `%`, `#`). The core issue of density-based character selection is now resolved.
