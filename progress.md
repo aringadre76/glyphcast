@@ -353,3 +353,58 @@ Added `score_tiles_with_luminance()` method that:
 - Full test suite: `46 passed`
 - Lint checks: no issues
 - GitHub commit: 7681b4f
+
+## Seventh debug pass - CharMapper Refactor
+
+### Issue identified
+
+The `CharMapper` needed better organization of character selection methods. After implementing luminance mode, the code became complex with overlapping concerns.
+
+### Refactor
+
+1. Fixed charset resolution bug - preset names like `"minimal"` now correctly expand to actual charset strings
+2. Renamed and reorganized scoring methods:
+   - `_score_tiles_with_templates`: Original template matching
+   - `score_tiles_with_edge_density`: Edge density-based selection
+   - `score_tiles_with_luminance`: Grayscale intensity-based selection
+
+3. Updated luminance mode thresholds based on actual data distribution:
+   - `0.0-0.45`: `@` (very dark)
+   - `0.45-0.6`: `#` (dark)
+   - `0.6-0.75`: `%` (medium)
+   - `0.75-0.85`: `*` (bright)
+   - `0.85-0.95`: `.` (very bright)
+   - `0.95-1.0`: space (background)
+   - Tiles without edges always get space
+
+4. Simplified edge mode thresholds for clearer character mapping
+
+### Comparison of modes
+
+| Mode | `@` count | `#` count | `.` count | Notes |
+|------|-----------|-----------|-----------|-------|
+| Baseline | 182 | 92 | 34 | Original reference |
+| Template | 17 | 80 | 81 | Uses template similarity |
+| Luminance | 405 | 107 | 2 | Dark areas get `@` |
+| Edge | 3 | 89 | 47 | Edge density mapping |
+
+### Character distribution analysis
+
+The key finding: different modes produce different distributions even with the same charset. The baseline uses `@` heavily (182) while template uses it sparingly (17). This is because:
+
+1. **Template matching** selects based on visual similarity to synthetic templates (white-on-black glyphs)
+2. **Edge density** maps tiles based on edge presence
+3. **Luminance** maps based on grayscale intensity (dark = dense)
+
+### Final recommendation
+
+For this GIF, **template mode with minimal charset** provides the best balance:
+- Simple, fast (no CNN needed)
+- Good structure and sparsity
+- Uses common ASCII characters: `@`, `%`, `#`, `.`
+
+### Validation
+
+- Full test suite: `46 passed`
+- Lint checks: no issues
+- GitHub commit: fbaa50b
