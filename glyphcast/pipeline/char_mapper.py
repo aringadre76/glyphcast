@@ -62,6 +62,8 @@ class CharMapper:
         tiles = self._prepare_tiles_for_scoring(tiles)
         if self.effective_mode == "template":
             return self._score_tiles_with_templates(tiles)
+        if self.effective_mode == "luminance":
+            return self.score_tiles_with_luminance(tiles)
         if self.effective_mode == "density":
             return self.score_tiles_with_edge_density(tiles)
         if self.effective_mode == "cnn":
@@ -184,6 +186,49 @@ class CharMapper:
         scores = np.zeros((tiles.shape[0], num_chars), dtype=np.float32)
         for i, idx in enumerate(indices):
             scores[i, idx] = 1.0
+
+        return scores
+
+    def score_tiles_with_luminance(self, tiles: np.ndarray) -> np.ndarray:
+        """Score tiles based on grayscale luminance and edges for character selection.
+
+        Similar to the baseline approach:
+        - Tiles without edges -> space
+        - Tiles with edges -> character based on edge density (not luminance)
+        """
+        # Edge tiles are in channel 1
+        edges = tiles[:, 1]
+        edge_density = edges.mean(axis=(1, 2))
+
+        num_chars = len(DENSITY_BASED_CHARSET)
+        blank_idx = DENSITY_BASED_CHARSET.index(" ")
+
+        # Initialize scores with blank
+        scores = np.zeros((tiles.shape[0], num_chars), dtype=np.float32)
+
+        # For tiles with edges, use edge density to select character
+        for i in range(len(tiles)):
+            if edge_density[i] > 0.02:
+                # Use edge density to select character:
+                # Low edge density (0.02-0.05) -> .
+                # Medium (0.05-0.1) -> :
+                # Higher (0.1-0.15) -> -
+                # Medium-high (0.15-0.2) -> +
+                # High (0.2-0.3) -> *
+                # Very high (0.3-0.5) -> #
+                # Dense (0.5-0.7) -> %
+                # Very dense (0.7-1.0) -> @
+                thresholds = [0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0]
+                for idx, thresh in enumerate(thresholds):
+                    if edge_density[i] <= thresh:
+                        # Map to character index (space first, then the rest)
+                        char_idx = idx + 1  # +1 because space is at index 0
+                        break
+                else:
+                    char_idx = num_chars - 1  # Default to last character (@)
+                scores[i, char_idx] = 1.0
+            else:
+                scores[i, blank_idx] = 1.0
 
         return scores
 
