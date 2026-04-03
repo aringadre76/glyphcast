@@ -62,7 +62,7 @@ def test_benchmark_uses_preset_runtime_and_reports_summary(tmp_path: Path) -> No
 
     class FakeArtifacts:
         ascii_frame = FakeAsciiFrame()
-        diagnostics = {"device": "cuda", "edge_backend": "dexined", "glyph_mode": "template"}
+        diagnostics = {"device": "cuda", "edge_backend": "dexined", "glyph_mode": "luminance"}
 
     class FakePipeline:
         def __init__(self, **kwargs: object) -> None:
@@ -77,7 +77,7 @@ def test_benchmark_uses_preset_runtime_and_reports_summary(tmp_path: Path) -> No
                 "edge_backend": "dexined",
                 "edge_device": "cuda",
                 "edge_checkpoint": "artifacts/models/edge/dexined.pt",
-                "glyph_mode": "template",
+                "glyph_mode": "luminance",
                 "glyph_device": "cpu",
                 "char_model_path": "None",
             }
@@ -91,7 +91,7 @@ def test_benchmark_uses_preset_runtime_and_reports_summary(tmp_path: Path) -> No
 
     assert result.exit_code == 0
     assert captured["device"] == "cuda"
-    assert captured["glyph_mode"] == "template"
+    assert captured["glyph_mode"] == "luminance"
     assert captured["background_suppression"] is True
     assert "device=cuda" in result.output
-    assert "glyph_mode=template" in result.output
+    assert "glyph_mode=luminance" in result.output

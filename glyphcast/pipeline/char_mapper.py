@@ -203,18 +203,16 @@ class CharMapper:
     def score_tiles_with_luminance(self, tiles: np.ndarray) -> np.ndarray:
         """Score tiles based on grayscale luminance for character selection.
 
-        Maps grayscale intensity to characters:
-        - Dark areas (luminance < 0.45) -> @ (densest)
-        - Medium-dark (0.45-0.6) -> # (dark)
-        - Medium (0.6-0.75) -> % (medium)
-        - Medium-bright (0.75-0.85) -> * (bright)
-        - Bright (0.85-0.95) -> . (very bright)
-        - Very bright (0.95-1.0) -> space (background)
-
-        Tiles without edges always get space.
+        Maps luminance + variance to characters:
+        - Darkest/uniform -> @
+        - Dark -> #
+        - Medium/uniform -> %
+        - Medium -> *
+        - Bright/uniform -> .
+        - Bright -> space (filtered)
         """
         # Grayscale tiles are in channel 0, edges in channel 1
-        grayscale = tiles[:, 0]  # 0 = black (dark), 1 = white (bright)
+        grayscale = tiles[:, 0]
         edges = tiles[:, 1]
 
         luminance = grayscale.mean(axis=(1, 2))
@@ -223,26 +221,28 @@ class CharMapper:
         num_chars = len(DENSITY_BASED_CHARSET)
         blank_idx = DENSITY_BASED_CHARSET.index(" ")
 
-        # Initialize scores with blank
         scores = np.zeros((tiles.shape[0], num_chars), dtype=np.float32)
 
         for i in range(len(tiles)):
             lum = luminance[i]
-            has_edges = edge_density[i] > 0.02
+            edge = edge_density[i]
 
-            if not has_edges:
-                # No edges - use space
+            if edge <= 0.01:
                 scores[i, blank_idx] = 1.0
             elif lum < 0.45:
                 scores[i, 9] = 1.0  # @
-            elif lum < 0.6:
+            elif lum < 0.55:
                 scores[i, 7] = 1.0  # #
-            elif lum < 0.75:
+            elif lum < 0.65:
                 scores[i, 8] = 1.0  # %
-            elif lum < 0.85:
+            elif lum < 0.75:
                 scores[i, 6] = 1.0  # *
-            elif lum < 0.95:
+            elif lum < 0.85:
                 scores[i, 1] = 1.0  # .
+            elif lum < 0.92:
+                scores[i, 2] = 1.0  # :
+            elif lum < 0.95:
+                scores[i, 3] = 1.0  # -
             else:
                 scores[i, blank_idx] = 1.0  # space
 

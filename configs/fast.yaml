@@ -5,7 +5,7 @@ runtime:
   edge_backend: dexined
   edge_checkpoint: artifacts/models/edge/dexined.pt
   edge_fallback_backend: sobel
-  glyph_mode: template
+  glyph_mode: luminance
   char_model_path: None
   glyph_fallback_mode: None
   fallback_device: cpu
